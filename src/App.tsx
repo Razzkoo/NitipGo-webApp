@@ -50,6 +50,7 @@ import TravelerTrip from "./pages/traveler/TravelerTrip";
 import DetailManage from "@/pages/traveler/DetailManage";
 import TarikSaldo from "./pages/traveler/TarikSaldo";
 import RiwayatSaldo from "./pages/traveler/RiwayatSaldo";
+import PaymentBoost from "./pages/traveler/PaymentBoost";
 
 // Admin Pages
 import AdminUsers from "./pages/admin/Users";
@@ -59,6 +60,7 @@ import AdminDisputes from "./pages/admin/Disputes";
 import AdminSettings from "./pages/admin/Settings";
 import AdminWallet from "./pages/admin/AdminWallet";
 import AdminRating from "./pages/admin/Rating"
+import AdminBoosters from "./pages/admin/Boosters";
 
 // Profile Pages
 import CustomerProfile from "./pages/profile/CustomerProfile";
@@ -145,6 +147,7 @@ const App = () => (
           <Route path="/traveler/order/:id" element={<DetailManage />} />
           <Route path="/traveler/tariksaldo" element={<TarikSaldo />} />
           <Route path="/traveler/riwayatsaldo" element={<RiwayatSaldo />} />
+          <Route path="/traveler/boost/payment" element={<PaymentBoost />} />
           
           {/* Admin Dashboard */}
           <Route path="/admin" element={<AdminDashboard />} />
@@ -158,6 +161,7 @@ const App = () => (
           <Route path="/admin/notifications" element={<AdminNotifications />} />
           <Route path="/admin/wallet" element={<AdminWallet />} />
           <Route path="/admin/rating" element={<AdminRating />} />
+          <Route path="/admin/boosters" element={<AdminBoosters />} />
           
           {/* Live Chat */}
           <Route path="/live-chat" element={<LiveChat />} />

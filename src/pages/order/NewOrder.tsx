@@ -1,1149 +1,908 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Package, MapPin, Calendar, Upload, Info, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, Package, Upload, ArrowRight, CheckCircle,
+  AlertCircle, MapPin, Star, Zap, ChevronDown, Scale,
+  CalendarDays, User, Phone, FileText, Tag, TrendingUp,
+} from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+// ─── Data ──────────────────────────────────────────────────────────────────────
 
 const pickupPoints = [
-  { id: "1", name: "Mitra Pos Cikini", address: "Jl. Cikini Raya No. 45" },
-  { id: "2", name: "Mitra Pos Menteng", address: "Jl. Menteng Raya No. 12" },
-  { id: "3", name: "Titik Temu Stasiun Gambir", address: "Lobi Utama Stasiun" },
+  { id: "1", name: "Mitra Pos Cikini", address: "Jl. Cikini Raya No. 45", distance: "2.1 km" },
+  { id: "2", name: "Mitra Pos Menteng", address: "Jl. Menteng Raya No. 12", distance: "4.3 km" },
+  { id: "3", name: "Titik Temu Stasiun Gambir", address: "Lobi Utama Stasiun", distance: "6.8 km" },
 ];
 
-const cities = [
-  "Jakarta",
-  "Bandung",
-  "Surabaya",
-  "Yogyakarta",
-  "Batam",
-  "Denpasar",
-];
+const cities = ["Jakarta", "Bandung", "Surabaya", "Yogyakarta", "Batam", "Denpasar"];
 
 const travelers = [
-  { id: "t1", name: "Andi Pratama", route: "Jakarta → Batam", date: "2026-02-15", rating: 4.8, reviews: 120, capacityLeft: "5 kg", distance: "5km", departureTime: "08:30", estimatedArrival: "18:00", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=andi", pricePerKg: 25000 },
-  { id: "t2", name: "Salsa Putri", route: "Bandung → Surabaya", date: "2026-02-18", rating: 4.7, reviews: 95, capacityLeft: "7 kg", distance: "12km", departureTime: "09:00", estimatedArrival: "20:00", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=salsa", pricePerKg: 15000 },
-  { id: "t3", name: "Rizky Mahendra", route: "Jakarta → Denpasar", date: "2026-02-20", rating: 4.5, reviews: 85, capacityLeft: "3 kg", distance: "18km", departureTime: "07:00", estimatedArrival: "19:00", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=rizky", pricePerKg: 35000 },
+  {
+    id: "t1", name: "Andi Pratama", route: "Jakarta → Batam",
+    date: "2026-02-15", rating: 4.8, reviews: 120,
+    capacityLeft: "5 kg", distance: "5km",
+    departureTime: "08:30", estimatedArrival: "18:00",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=andi",
+    pricePerKg: 25000, badge: "Top Rated",
+  },
+  {
+    id: "t2", name: "Salsa Putri", route: "Bandung → Surabaya",
+    date: "2026-02-18", rating: 4.7, reviews: 95,
+    capacityLeft: "7 kg", distance: "12km",
+    departureTime: "09:00", estimatedArrival: "20:00",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=salsa",
+    pricePerKg: 15000, badge: "Termurah",
+  },
+  {
+    id: "t3", name: "Rizky Mahendra", route: "Jakarta → Denpasar",
+    date: "2026-02-20", rating: 4.5, reviews: 85,
+    capacityLeft: "3 kg", distance: "18km",
+    departureTime: "07:00", estimatedArrival: "19:00",
+    avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=rizky",
+    pricePerKg: 35000, badge: null,
+  },
 ];
 
-// Simulate auth state - in real app this would come from auth context
-const isLoggedIn = true; // Set to false to test guest view
+const EXPRESS_FEE = 5000;
+const isLoggedIn = true;
+
+const userProfile = { address: "Jl. Kaliurang KM 7, Sleman, Yogyakarta" };
+
+const STEPS = ["Detail Barang", "Pilih Traveler", "Titik COD", "Konfirmasi"];
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-0 mb-10">
+      {STEPS.map((label, i) => {
+        const s = i + 1;
+        const done = s < current;
+        const active = s === current;
+        return (
+          <div key={s} className="flex items-center">
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={`
+                  flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold
+                  transition-all duration-300
+                  ${done ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]" : ""}
+                  ${active ? "bg-green-600 text-white shadow-[0_0_16px_rgba(22,163,74,0.45)] scale-110" : ""}
+                  ${!done && !active ? "bg-zinc-100 text-zinc-400 border border-zinc-200" : ""}
+                `}
+              >
+                {done ? <CheckCircle className="h-4 w-4" /> : s}
+              </div>
+              <span
+                className={`text-xs font-medium hidden sm:block ${
+                  active ? "text-green-600" : done ? "text-emerald-500" : "text-zinc-400"
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className={`mx-2 mb-4 h-[2px] w-12 sm:w-16 rounded-full transition-all duration-500 ${
+                  s < current ? "bg-emerald-400" : "bg-zinc-200"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FieldLabel({ children, icon: Icon }: { children: React.ReactNode; icon?: React.ElementType }) {
+  return (
+    <label className="flex items-center gap-2 text-sm font-semibold text-zinc-700 mb-1.5">
+      {Icon && <Icon className="h-3.5 w-3.5 text-green-600" />}
+      {children}
+    </label>
+  );
+}
+
+function InfoNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">{children}</p>
+  );
+}
+
+function SectionCard({ title, children }: { title?: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm">
+      {title && <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-5">{title}</h3>}
+      {children}
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function NewOrder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderTypeFromUrl = searchParams.get("type");
-  const [step, setStep] = useState<number>(1);
+
+  const [step, setStep] = useState(1);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [isExpress, setIsExpress] = useState(false);
+  const [filters, setFilters] = useState({ minRating: "", minCapacity: "", maxPrice: "" });
+
   const [formData, setFormData] = useState({
     orderType: orderTypeFromUrl === "kirim" ? "kirim" : "titip-beli",
     itemName: "",
     itemDescription: "",
-    serviceType: "",
+    recipientName: "",
+    recipientPhone: "",
     weight: "",
     photo: null as File | null,
     pickupPoint: "",
+    dropPoint: "",
     estimatedItemPrice: "",
     notes: "",
-    pickupLocation: "",
-    dropLocation: "",
-    dropPoint: "",
     originCity: "",
     destinationCity: "",
     travelDate: "",
     travelerId: "",
-    originAddress: "",
+    originAddress: userProfile.address,
     destinationAddress: "",
   });
-  useEffect(() => {
-  if (orderTypeFromUrl === "titip-beli" || orderTypeFromUrl === "kirim") {
-    setFormData((prev) => ({
-      ...prev,
-      orderType: orderTypeFromUrl,
-    }));
-  }
-}, [orderTypeFromUrl]);
 
-  // Mock calculation
-  const estimatedPrice = formData.weight ? parseInt(formData.weight) * 25000 : 0;
+  const set = (key: string, value: unknown) =>
+    setFormData((prev) => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    if (orderTypeFromUrl === "titip-beli" || orderTypeFromUrl === "kirim") {
+      set("orderType", orderTypeFromUrl);
+    }
+  }, [orderTypeFromUrl]);
+
+  const selectedTraveler = travelers.find((t) => t.id === formData.travelerId);
+  const weightNum = Number(formData.weight || 0);
+  const itemPriceNum = Number(formData.estimatedItemPrice || 0);
+  const deliveryFee = selectedTraveler ? weightNum * selectedTraveler.pricePerKg : 0;
+  const totalPayment =
+    (formData.orderType === "titip-beli" ? deliveryFee + itemPriceNum : deliveryFee) +
+    (isExpress ? EXPRESS_FEE : 0);
+
+  const filteredTravelers = travelers
+    .filter((t) => {
+      if (filters.minRating && t.rating < Number(filters.minRating)) return false;
+      if (filters.minCapacity && parseInt(t.capacityLeft) < Number(filters.minCapacity)) return false;
+      if (filters.maxPrice && t.pricePerKg > Number(filters.maxPrice)) return false;
+      return true;
+    })
+    .sort((a, b) => a.pricePerKg - b.pricePerKg);
+
+  const pickupLabel = (id: string) => {
+    const p = pickupPoints.find((x) => x.id === id);
+    return p ? `${p.name} – ${p.address}` : "-";
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
+    if (step < 4) {
+      setStep(step + 1);
+    } else {
+      setOrderNumber(`ORD-${Date.now().toString().slice(-6)}`);
+      setSubmitted(true);
+    }
+  };
 
-  if (step < 4) {
-    setStep(step + 1);
-  } else {
-    const generatedOrderNumber = `ORD-${Date.now()
-      .toString()
-      .slice(-6)}`;
-
-    setOrderNumber(generatedOrderNumber);
-    setSubmitted(true);
-
-    console.log("Order submitted:", formData);
-  }
-};
-
-      const selectedTraveler = travelers.find(
-  (t) => t.id === formData.travelerId
-);
-
-const weightNumber = Number(formData.weight || 0
-);
-
-const estimatedItemPriceNumber = Number(
-  formData.estimatedItemPrice || 0
-);
-
-const deliveryFee =
-  selectedTraveler
-    ? weightNumber * selectedTraveler.pricePerKg
-    : 0;
-
-const totalPayment =
-  formData.orderType === "titip-beli"
-    ? deliveryFee + estimatedItemPriceNumber
-    : deliveryFee;
-
-const [filters, setFilters] = useState({
-  minRating: "",
-  minCapacity: "",
-  maxPrice: "",
-});
-
-const filteredTravelers = travelers
-  .filter((t) => {
-    if (filters.minRating && t.rating < Number(filters.minRating)) return false;
-    if (
-      filters.minCapacity &&
-      parseInt(t.capacityLeft) < Number(filters.minCapacity)
-    )
-      return false;
-    if (filters.maxPrice && t.pricePerKg > Number(filters.maxPrice))
-      return false;
-    return true;
-  })
-  .sort((a, b) => a.pricePerKg - b.pricePerKg); // TERMURAH KE ATAS
-
-const userProfile = {
-  address: "Jl. Kaliurang KM 7, Sleman, Yogyakarta",
-};
-
-const pickupLabel = (id: string) => {
-  const point = pickupPoints.find((p) => p.id === id);
-  return point ? `${point.name} – ${point.address}` : "-";
-};
-
-useEffect(() => {
-  if (userProfile?.address) {
-    setFormData((prev) => ({
-      ...prev,
-      originAddress: userProfile.address,
-    }));
-  }
-}, [userProfile]);
-
-  // If guest, show login prompt
+  // ── Guest gate ──
   if (!isLoggedIn) {
     return (
       <DashboardLayout role="customer">
-        <div className="p-6 md:p-8 lg:p-10">
-          <div className="max-w-md mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-card p-8 shadow-card text-center"
-            >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-warning/20 mx-auto mb-6">
-                <AlertCircle className="h-8 w-8 text-warning" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                Login Diperlukan
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Anda harus login sebagai customer terlebih dahulu untuk membuat order.
-              </p>
-              <div className="flex flex-col gap-3">
-                <Button variant="hero" asChild>
-                  <Link to="/login">Login Sekarang</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/register">Daftar Gratis</Link>
-                </Button>
-              </div>
-            </motion.div>
-          </div>
+        <div className="flex min-h-[70vh] items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-sm rounded-3xl border border-zinc-100 bg-white p-10 text-center shadow-xl"
+          >
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
+              <AlertCircle className="h-8 w-8 text-amber-500" />
+            </div>
+            <h2 className="text-xl font-bold text-zinc-900 mb-2">Login Diperlukan</h2>
+            <p className="text-sm text-zinc-500 mb-8 leading-relaxed">
+              Silakan login sebagai customer untuk melanjutkan pembuatan order.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button className="h-11 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold" asChild>
+                <Link to="/login">Login Sekarang</Link>
+              </Button>
+              <Button variant="outline" className="h-11 rounded-xl" asChild>
+                <Link to="/register">Daftar Gratis</Link>
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </DashboardLayout>
     );
   }
 
+  // ── Main form ──
   return (
     <DashboardLayout role="customer">
-      <div className="p-6 md:p-8 lg:p-10">
-          {!submitted && (
-  <Button
-    variant="ghost"
-    className="mb-6"
-    onClick={() =>
-      step > 1 ? setStep(step - 1) : navigate(-1)
-    }
-  >
-    <ArrowLeft className="h-4 w-4 mr-2" />
-    {step > 1 ? "Langkah Sebelumnya" : "Kembali"}
-  </Button>
-)}
-
-          <div className="max-w-2xl">
-            {/* Progress */}
-            {!submitted && (
-              <div className="flex items-center justify-center gap-2 mb-8">
-                {[1, 2, 3, 4].map((s) => (
-                  <div key={s} className="flex items-center">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-                        s <= step
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {s}
-                    </div>
-                    {s < 4 && (
-                      <div className={`w-12 h-1 mx-2 ${s < step ? "bg-primary" : "bg-muted"}`} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!submitted ? (
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="rounded-2xl bg-card p-6 md:p-8 shadow-card"
-              >
-                <form onSubmit={handleSubmit}>
-                  {step === 1 && (
-                    <>
-                      <h2 className="text-xl font-semibold text-foreground mb-6">
-                        Detail Barang
-                      </h2>
-                      <div className="space-y-5">
-                         <div className="space-y-2">
-  <Label>Foto Barang (Opsional)</Label>
-
-  <label className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer block">
-    <input
-      type="file"
-      accept="image/png,image/jpeg"
-      className="hidden"
-      onChange={(e) =>
-        setFormData({
-          ...formData,
-          photo: e.target.files?.[0] || null,
-        })
-      }
-    />
-
-    {!formData.photo ? (
-      <>
-        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground">
-          Klik untuk upload foto barang
-        </p>
-      </>
-    ) : (
-      <img
-        src={URL.createObjectURL(formData.photo)}
-        alt="Preview"
-        className="mx-auto max-h-40 rounded-lg object-cover"
-      />
-    )}
-  </label>
-</div>
-                        <div className="space-y-2">
-                          <Label>Jenis Order</Label>
-                          <Select value={formData.orderType} disabled>
-                            <p className="text-xs text-muted-foreground">Jenis order ditentukan dari pilihan sebelumnya</p>
-                            <SelectTrigger className="h-12">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="titip-beli">Titip Beli Barang</SelectItem>
-                              <SelectItem value="kirim">Kirim / Titip Barang</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <div className="space-y-2">
-    <Label>Kota Asal</Label>
-    <Select
-      value={formData.originCity}
-      onValueChange={(value) =>
-        setFormData({ ...formData, originCity: value })
-      }
-    >
-      <SelectTrigger className="h-12">
-        <SelectValue placeholder="Pilih kota asal" />
-      </SelectTrigger>
-      <SelectContent>
-        {cities.map((city) => (
-          <SelectItem key={city} value={city}>
-            {city}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-
-  <div className="space-y-2">
-    <Label>Kota Tujuan</Label>
-    <Select
-      value={formData.destinationCity}
-      onValueChange={(value) =>
-        setFormData({ ...formData, destinationCity: value })
-      }
-    >
-      <SelectTrigger className="h-12">
-        <SelectValue placeholder="Pilih kota tujuan" />
-      </SelectTrigger>
-      <SelectContent>
-        {cities.map((city) => (
-          <SelectItem key={city} value={city}>
-            {city}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-</div>
-<div className="space-y-2">
-  <Label>Alamat Asal</Label>
-  <Input
-    value={formData.originAddress}
-    readOnly
-    className="h-12 bg-muted cursor-not-allowed"
-  />
-  <p className="text-xs text-muted-foreground">
-    Alamat diambil otomatis dari profil Anda
-  </p>
-</div>
-
-{formData.orderType === "kirim" && (
-  <div className="space-y-2">
-    <Label htmlFor="destinationAddress">
-      Alamat Tujuan (Detail)
-    </Label>
-    <Textarea
-      id="destinationAddress"
-      placeholder="Contoh: Jl. Ahmad Yani No. 12"
-      rows={2}
-      value={formData.destinationAddress}
-      onChange={(e) =>
-        setFormData({
-          ...formData,
-          destinationAddress: e.target.value,
-        })
-      }
-      required
-    />
-  </div>
-)}
-<div className="space-y-2">
-  <Label htmlFor="travelDate">Tanggal Perjalanan</Label>
-  <Input
-    id="travelDate"
-    type="date"
-    value={formData.travelDate}
-    onChange={(e) =>
-      setFormData({ ...formData, travelDate: e.target.value })
-    }
-    className="h-12"
-    required
-  />
-</div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="itemName">Nama Barang</Label>
-                          <Input
-                            id="itemName"
-                            placeholder="Contoh: Sepatu Nike Air Max"
-                            value={formData.itemName}
-                            onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
-                            className="h-12"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="itemDescription">Deskripsi Barang</Label>
-                          <Textarea
-                            id="itemDescription"
-                            placeholder="Jelaskan detail barang (warna, ukuran, kondisi, dll)"
-                            rows={4}
-                            value={formData.itemDescription}
-                            onChange={(e) => setFormData({ ...formData, itemDescription: e.target.value })}
-                            required
-                          />
-                        </div>
-                        {formData.orderType === "titip-beli" && (
-  <div className="space-y-2">
-    <Label htmlFor="estimatedItemPrice">
-      Estimasi Harga Barang
-    </Label>
-    <Input
-      id="estimatedItemPrice"
-      type="number"
-      placeholder="Contoh: 350000"
-      value={formData.estimatedItemPrice}
-      onChange={(e) =>
-        setFormData({
-          ...formData,
-          estimatedItemPrice: e.target.value,
-        })
-      }
-      className="h-12"
-    />
-    <p className="text-xs text-muted-foreground">
-      Digunakan sebagai perkiraan harga barang (khusus titip beli)
-    </p>
-  </div>
-)}
-                        <div className="space-y-2">
-                          <Label htmlFor="weight">Estimasi Berat (kg)</Label>
-                          <Input
-                            id="weight"
-                            type="number"
-                            min="0.1"
-                            step="0.1"
-                            placeholder="Contoh: 1.5"
-                            value={formData.weight}
-                            onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                            className="h-12"
-                            required
-                          />
-                        </div>
-</div>
-<div className="pt-6">
-  <Button
-    type="submit"
-    className="w-full h-12 text-base font-semibold gap-2"
-  >
-    Lanjut
-    <ArrowRight className="h-5 w-5" />
-  </Button>
-</div>
-  </>
-)}
-
-{step === 2 && (
-  <>
-    <h2 className="text-xl font-semibold text-foreground mb-2">
-      Pilih Mitra Traveler
-    </h2>
-
-    <p className="text-sm text-muted-foreground mb-6">
-      Traveler tersedia sesuai rute, tanggal, dan jam keberangkatan
-    </p>
-
-    {/* ================= QUICK FILTER (ENHANCED UI) ================= */}
-<div className="mb-8">
-  <div
-    className="
-      flex items-center gap-3 overflow-x-auto
-      rounded-2xl border bg-background/70 backdrop-blur
-      px-4 py-3 shadow-sm
-    "
-  >
-
-    {/* RATING */}
-    <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2">
-      <span className="text-sm font-medium text-muted-foreground">
-        Rating
-      </span>
-
-      <Select
-        value={filters.minRating}
-        onValueChange={(value) =>
-          setFilters({ ...filters, minRating: value })
-        }
-      >
-        <SelectTrigger className="h-8 w-[90px] rounded-full border-none bg-background shadow-sm">
-          <SelectValue placeholder="All" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="4">4.0+</SelectItem>
-          <SelectItem value="4.5">4.5+</SelectItem>
-          <SelectItem value="4.8">4.8+</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* HARGA */}
-    <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2">
-      <span className="text-sm font-medium text-muted-foreground">
-        Harga
-      </span>
-
-      <Select
-        value={filters.maxPrice}
-        onValueChange={(value) =>
-          setFilters({ ...filters, maxPrice: value })
-        }
-      >
-        <SelectTrigger className="h-8 w-[120px] rounded-full border-none bg-background shadow-sm">
-          <SelectValue placeholder="All" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="20000">≤ 20K</SelectItem>
-          <SelectItem value="30000">≤ 30K</SelectItem>
-          <SelectItem value="40000">≤ 40K</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* KAPASITAS */}
-    <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-2">
-      <span className="text-sm font-medium text-muted-foreground">
-        Kapasitas
-      </span>
-
-      <Select
-        value={filters.minCapacity}
-        onValueChange={(value) =>
-          setFilters({ ...filters, minCapacity: value })
-        }
-      >
-        <SelectTrigger className="h-8 w-[110px] rounded-full border-none bg-background shadow-sm">
-          <SelectValue placeholder="All" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="3">≥ 3 kg</SelectItem>
-          <SelectItem value="5">≥ 5 kg</SelectItem>
-          <SelectItem value="7">≥ 7 kg</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-
-    {/* RESET BUTTON */}
-    {(filters.minRating || filters.maxPrice || filters.minCapacity) && (
-      <button
-        type="button"
-        onClick={() =>
-          setFilters({
-            minRating: "",
-            minCapacity: "",
-            maxPrice: "",
-          })
-        }
-        className="
-          ml-auto flex items-center gap-2
-          rounded-full border border-primary/30
-          bg-primary/10 px-4 py-2
-          text-sm font-semibold text-primary
-          hover:bg-primary hover:text-primary-foreground
-          transition-all
-        "
-      >
-        Reset
-      </button>
-    )}
-  </div>
-</div>
-
-    {/* LIST TRAVELER */}
-    <div className="space-y-6">
-      {filteredTravelers.map((traveler, index) => (
-        <motion.label
-          key={traveler.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          className={`relative block rounded-2xl border-2 p-5 cursor-pointer transition-all
-            ${
-              formData.travelerId === traveler.id
-                ? "border-primary bg-primary/5 shadow-md"
-                : "border-border hover:border-primary/40 hover:shadow-sm"
-            }
-          `}
-        >
-          <input
-            type="radio"
-            name="traveler"
-            value={traveler.id}
-            checked={formData.travelerId === traveler.id}
-            onChange={(e) =>
-              setFormData({ ...formData, travelerId: e.target.value })
-            }
-            className="hidden"
-            required
-          />
-
-          {/* HEADER */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              {/* AVATAR ANIMATION */}
-              <motion.img
-                src={traveler.avatar}
-                alt={traveler.name}
-                className="w-16 h-16 rounded-full object-cover border"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              />
-
-              <div>
-                <p className="font-semibold text-foreground text-base leading-tight">
-                  {traveler.name}
-                </p>
-
-                <p className="text-sm text-muted-foreground">
-                  {traveler.route}
-                </p>
-
-                {/* HARGA DITONJOLIN */}
-                <div className="mt-3">
-                  <p className="text-xs text-muted-foreground">
-                    Harga per kg
-                  </p>
-                  <p className="text-lg font-bold text-primary">
-                    Rp {traveler.pricePerKg.toLocaleString()}
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {" "}
-                      / kg
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* RATING */}
-            <div className="flex items-center gap-1 shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5 text-yellow-400"
-              >
-                <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-              </svg>
-
-              <span className="text-sm font-semibold text-yellow-500">
-                {traveler.rating}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({traveler.reviews})
-              </span>
-            </div>
-          </div>
-
-          
-{/* JAM & ESTIMASI (TIMELINE TRAVEL) */}
-<motion.div
-  className="mt-6 rounded-xl border bg-muted/40 px-4 py-4"
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
->
-  <div className="relative flex items-center justify-between min-h-[56px]">
-
-    {/* BERANGKAT */}
-    <div className="flex items-center gap-3 z-10">
-      <div className="relative flex items-center justify-center w-4 h-4">
-        <span className="absolute inline-flex h-4 w-4 rounded-full bg-primary/40 animate-ping" />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
-      </div>
-
-      <div>
-        <p className="text-xs text-muted-foreground">Berangkat</p>
-        <p className="font-semibold text-foreground">
-          {traveler.departureTime}
-        </p>
-      </div>
-    </div>
-
-    {/* GARIS */}
-    <div className="absolute left-1/2 -translate-x-1/2 w-[40%] h-[2px] bg-gradient-to-r from-primary via-primary/60 to-emerald-500 rounded-full z-0" />
-
-    {/* SAMPAI */}
-    <div className="flex items-center gap-3 z-10">
-      <div>
-        <p className="text-xs text-muted-foreground text-right">Sampai</p>
-        <p className="font-semibold text-foreground text-right">
-          {traveler.estimatedArrival}
-        </p>
-      </div>
-
-      <div className="relative flex items-center justify-center w-4 h-4">
-        <span className="absolute inline-flex h-4 w-4 rounded-full bg-emerald-500/40 animate-ping" />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-      </div>
-    </div>
-
-  </div>
-</motion.div>
-
-          {/* FOOTER */}
-          <div className="flex items-center justify-between text-sm">
-            <div className="text-muted-foreground">
-              {traveler.distance}
-            </div>
-
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">
-                Kapasitas tersedia
-              </p>
-              <p className="font-semibold text-foreground">
-                {traveler.capacityLeft}
-              </p>
-            </div>
-          </div>
-
-          {/* SELECTED INDICATOR */}
-           {formData.travelerId === traveler.id && (
-      <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-        ✓ Terpilih
-      </span>
-    )}
-        </motion.label>
-      ))}
-    </div>
-   <div className="pt-6">
-  <Button
-    type="submit"
-    className="w-full h-12 text-base font-semibold gap-2"
-  >
-    Lanjut
-    <ArrowRight className="h-5 w-5" />
-  </Button>
-</div>
-  </>
-)}
-
-                  {step === 3 && (
-  <>
-    <h2 className="text-xl font-semibold text-foreground mb-2">
-      Titik COD
-    </h2>
-
-    <p className="text-sm text-muted-foreground mb-6">
-      {formData.orderType === "titip-beli"
-        ? "Tentukan lokasi pertemuan dengan traveler"
-        : "Tentukan lokasi ambil dan antar barang"}
-    </p>
-
-    <div className="space-y-6">
-
-      {/* ================= TITIP BELI ================= */}
-      {formData.orderType === "titip-beli" && (
-        <div className="space-y-3">
-          {pickupPoints.map((point) => (
-            <label
-              key={point.id}
-              className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition
-                ${
-                  formData.pickupPoint === point.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40"
-                }`}
+      {/* ── Success Modal ── */}
+      <AnimatePresence>
+        {submitted && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 16 }}
+              transition={{ type: "spring", stiffness: 220, damping: 22 }}
+              className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
             >
-              <input
-                type="radio"
-                name="pickupPoint"
-                value={point.id}
-                checked={formData.pickupPoint === point.id}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    pickupPoint: e.target.value,
-                  })
-                }
-                className="mt-1"
-                required
-              />
-
-              <div>
-                <p className="font-medium text-foreground">
-                  {point.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {point.address}
-                </p>
+              {/* Animated checkmark ring */}
+              <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1.15, opacity: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="absolute inset-0 rounded-full bg-emerald-400"
+                />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 18 }}
+                  className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50"
+                >
+                  <CheckCircle className="h-10 w-10 text-emerald-500" />
+                </motion.div>
               </div>
-            </label>
-          ))}
-        </div>
-      )}
 
-      {/* ================= KIRIM BARANG ================= */}
-      {formData.orderType === "kirim" && (
-        <>
-          {/* COD 1 */}
-          <div>
-            <h3 className="font-semibold mb-3">
-              COD 1 – Ambil Barang
-            </h3>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <h2 className="text-2xl font-bold text-zinc-900 mb-1">Order Berhasil!</h2>
+                <p className="text-sm text-zinc-500 leading-relaxed mb-5">
+                  Order Anda telah dikirim ke traveler.<br />Konfirmasi akan datang sebentar lagi.
+                </p>
 
-            <div className="space-y-3">
-              {pickupPoints.map((point) => (
-                <label
-                  key={point.id}
-                  className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition
-                    ${
-                      formData.pickupPoint === point.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/40"
-                    }`}
+                <div className="rounded-2xl bg-zinc-50 border border-zinc-100 px-6 py-4 mb-6">
+                  <p className="text-xs text-zinc-400 mb-1">Nomor Order</p>
+                  <p className="text-lg font-bold tracking-widest text-green-600">{orderNumber}</p>
+                </div>
+
+                <Button
+                  className="h-12 w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold gap-2 shadow-md shadow-green-100"
+                  asChild
                 >
-                  <input
-                    type="radio"
-                    name="pickupPoint"
-                    value={point.id}
-                    checked={formData.pickupPoint === point.id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        pickupPoint: e.target.value,
-                      })
-                    }
-                    className="mt-1"
-                    required
-                  />
+                  <Link to="/dashboard">
+                    <Package className="h-4 w-4" />
+                    Ke Dashboard
+                  </Link>
+                </Button>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="min-h-screen bg-zinc-50/60 p-4 md:p-8 lg:p-10">
+        {/* Back button */}
+        <button
+          onClick={() => (step > 1 ? setStep(step - 1) : navigate(-1))}
+          className="mb-6 flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {step > 1 ? "Langkah Sebelumnya" : "Kembali"}
+        </button>
 
-                  <div>
-                    <p className="font-medium">{point.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {point.address}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* COD 2 */}
-          <div className="pt-6">
-            <h3 className="font-semibold mb-3">
-              COD 2 – Antar ke Penerima
-            </h3>
-
-            <div className="space-y-3">
-              {pickupPoints.map((point) => (
-                <label
-                  key={point.id}
-                  className={`flex gap-4 p-4 rounded-xl border-2 cursor-pointer transition
-                    ${
-                      formData.dropPoint === point.id
-                        ? "border-emerald-500 bg-emerald-500/5"
-                        : "border-border hover:border-emerald-500/40"
-                    }`}
-                >
-                  <input
-                    type="radio"
-                    name="dropPoint"
-                    value={point.id}
-                    checked={formData.dropPoint === point.id}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        dropPoint: e.target.value,
-                      })
-                    }
-                    className="mt-1"
-                    required
-                  />
-
-                  <div>
-                    <p className="font-medium">{point.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {point.address}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-
-    <div className="pt-6">
-  <Button
-    type="submit"
-    className="w-full h-12 text-base font-semibold gap-2"
-  >
-    Lanjut
-    <ArrowRight className="h-5 w-5" />
-  </Button>
-</div>
-  </>
-)}
-
-                  {step === 4 && (
-  <>
-    <h2 className="text-xl font-semibold text-foreground mb-2">
-      Review & Konfirmasi Order
-    </h2>
-
-    <p className="text-sm text-muted-foreground mb-6">
-      Pastikan semua detail sudah benar sebelum mengirim pesanan
-    </p>
-
-    <div className="space-y-6">
-
-      {/* ===================== */}
-      {/* DETAIL PESANAN */}
-      {/* ===================== */}
-      <div className="rounded-2xl border p-5 bg-background">
-        <h3 className="font-semibold text-foreground mb-4">
-          Detail Pesanan
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-
-          {/* ===== KIRI: INFO PESANAN ===== */}
-<div className="md:col-span-2 space-y-4">
-
-  <div>
-            <p className="text-xs text-muted-foreground">Jenis Layanan</p>
-            <p className="font-medium text-foreground">
-             {formData.orderType === "titip-beli"
-    ? "Titip Beli Barang"
-              : "Kirim / Titip Barang"}
+        <div className="mx-auto max-w-2xl">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-zinc-900">Buat Order Baru</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              {formData.orderType === "kirim" ? "Kirim / Titip Barang" : "Titip Beli Barang"}
             </p>
           </div>
 
-  {/* INFO BARANG */}
-  <div className="flex-1">
-    <p className="font-semibold text-foreground">
-      {formData.itemName}
-    </p>
+          <StepIndicator current={step} />
 
-    <p className="text-sm text-muted-foreground mt-1">
-      Berat: {formData.weight} kg
-    </p>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.25 }}
+            >
+              <form onSubmit={handleSubmit} className="space-y-5">
 
-    {formData.orderType === "titip-beli" &&
-      formData.estimatedItemPrice && (
-        <p className="text-sm text-muted-foreground mt-1">
-          Estimasi harga barang: Rp{" "}
-          {Number(formData.estimatedItemPrice).toLocaleString()}
-        </p>
-      )}
+                {/* ═══════════════════════════════════════════════ STEP 1 */}
+                {step === 1 && (
+                  <>
+                    <SectionCard title="Informasi Barang">
+                      <div className="space-y-5">
 
-    {formData.itemDescription && (
-  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-    {formData.itemDescription}
-  </p>
-)}
-  </div>
-    {/* ================= LOKASI ================= */}
-{formData.orderType === "titip-beli" && (
-  <div>
-    <p className="text-xs text-muted-foreground">
-      Lokasi COD
-    </p>
-    <p className="font-medium text-foreground">
-      {pickupLabel(formData.pickupPoint)}
-    </p>
-  </div>
-)}
+                        {/* Photo upload */}
+                        <div>
+                          <FieldLabel icon={Upload}>Foto Barang (Opsional)</FieldLabel>
+                          <label className="group relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition-all duration-200">
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg"
+                              className="hidden"
+                              onChange={(e) => set("photo", e.target.files?.[0] || null)}
+                            />
+                            {formData.photo ? (
+                              <img
+                                src={URL.createObjectURL(formData.photo)}
+                                alt="Preview"
+                                className="max-h-44 rounded-lg object-cover shadow-md"
+                              />
+                            ) : (
+                              <>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm border border-zinc-100">
+                                  <Upload className="h-5 w-5 text-indigo-500" />
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-sm font-medium text-zinc-700">Klik untuk upload foto</p>
+                                  <p className="text-xs text-zinc-400 mt-0.5">PNG, JPG hingga 5MB</p>
+                                </div>
+                              </>
+                            )}
+                          </label>
+                        </div>
 
-{formData.orderType === "kirim" && (
-  <>
-    <div>
-      <p className="text-xs text-muted-foreground">
-        Lokasi Jemput
-      </p>
-      <p className="font-medium text-foreground">
-        {pickupLabel(formData.pickupPoint)}
-      </p>
-    </div>
+                        {/* Order type (readonly) */}
+                        <div>
+                          <FieldLabel icon={Tag}>Jenis Order</FieldLabel>
+                          <div className="flex h-11 items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-medium text-zinc-600 cursor-not-allowed">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                            {formData.orderType === "titip-beli" ? "Titip Beli Barang" : "Kirim / Titip Barang"}
+                          </div>
+                          <InfoNote>Ditentukan dari halaman sebelumnya</InfoNote>
+                        </div>
 
-    <div>
-      <p className="text-xs text-muted-foreground">
-        Lokasi Tujuan
-      </p>
-      <p className="font-medium text-foreground">
-        {pickupLabel(formData.dropPoint)}
-      </p>
-    </div>
-  </>
-)}
-</div>
+                        {/* Cities */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <FieldLabel icon={MapPin}>Kota Asal</FieldLabel>
+                            <Select value={formData.originCity} onValueChange={(v) => set("originCity", v)}>
+                              <SelectTrigger className="h-11 rounded-xl border-zinc-200">
+                                <SelectValue placeholder="Pilih kota" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <FieldLabel icon={MapPin}>Kota Tujuan</FieldLabel>
+                            <Select value={formData.destinationCity} onValueChange={(v) => set("destinationCity", v)}>
+                              <SelectTrigger className="h-11 rounded-xl border-zinc-200">
+                                <SelectValue placeholder="Pilih kota" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
 
-          {formData.notes && (
-            <div className="sm:col-span-2">
-              <p className="text-xs text-muted-foreground">Catatan</p>
-              <p className="font-medium text-foreground">
-                {formData.notes}
-              </p>
-            </div>
-          )}
-           {/* ===== KANAN: FOTO BARANG ===== */}
-<div className="w-full h-full rounded-xl border bg-muted/30 flex items-center justify-center overflow-hidden">
-  {formData.photo ? (
-    <img
-      src={URL.createObjectURL(formData.photo)}
-      alt="Foto barang"
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <p className="text-sm text-muted-foreground text-center px-4">
-      Foto barang belum ditambahkan
-    </p>
-  )}
-</div>
-          </div>
-      </div>
+                        {/* Origin address */}
+                        <div>
+                          <FieldLabel icon={MapPin}>Alamat Asal</FieldLabel>
+                          <Input value={formData.originAddress} readOnly className="h-11 rounded-xl border-zinc-200 bg-zinc-50 cursor-not-allowed text-zinc-500" />
+                          <InfoNote>Diambil otomatis dari profil Anda</InfoNote>
+                        </div>
 
-      {/* ===================== */}
-      {/* TRAVELER TERPILIH */}
-      {/* ===================== */}
-      {selectedTraveler && (
-        <div className="rounded-2xl border p-5 bg-background">
-          <h3 className="font-semibold text-foreground mb-4">
-            Mitra Traveler
-          </h3>
+                        {/* Recipient fields (kirim only) */}
+                        {formData.orderType === "kirim" && (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <FieldLabel icon={User}>Nama Penerima</FieldLabel>
+                                <Input
+                                  placeholder="Nama penerima"
+                                  value={formData.recipientName}
+                                  onChange={(e) => set("recipientName", e.target.value)}
+                                  className="h-11 rounded-xl border-zinc-200"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <FieldLabel icon={Phone}>No. Telepon</FieldLabel>
+                                <Input
+                                  type="tel"
+                                  placeholder="08xxxxxxxxxx"
+                                  value={formData.recipientPhone}
+                                  onChange={(e) => set("recipientPhone", e.target.value)}
+                                  className="h-11 rounded-xl border-zinc-200"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <FieldLabel icon={MapPin}>Alamat Tujuan</FieldLabel>
+                              <Textarea
+                                placeholder="Jl. Ahmad Yani No. 12, RT/RW ..."
+                                rows={2}
+                                value={formData.destinationAddress}
+                                onChange={(e) => set("destinationAddress", e.target.value)}
+                                className="rounded-xl border-zinc-200 resize-none"
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
 
-          <div className="flex items-center gap-4">
-            <img
-              src={selectedTraveler.avatar}
-              alt={selectedTraveler.name}
-              className="w-14 h-14 rounded-full border"
-            />
+                        {/* Travel date */}
+                        <div>
+                          <FieldLabel icon={CalendarDays}>Tanggal Perjalanan</FieldLabel>
+                          <Input
+                            type="date"
+                            value={formData.travelDate}
+                            onChange={(e) => set("travelDate", e.target.value)}
+                            className="h-11 rounded-xl border-zinc-200"
+                            required
+                          />
+                        </div>
 
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">
-                {selectedTraveler.name}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {selectedTraveler.route}
-              </p>
+                        {/* Item name */}
+                        <div>
+                          <FieldLabel icon={Package}>Nama Barang</FieldLabel>
+                          <Input
+                            placeholder="Contoh: Sepatu Nike Air Max"
+                            value={formData.itemName}
+                            onChange={(e) => set("itemName", e.target.value)}
+                            className="h-11 rounded-xl border-zinc-200"
+                            required
+                          />
+                        </div>
 
-              <div className="flex items-center gap-2 mt-1 text-sm">
-                <span className="text-yellow-500 font-semibold">
-                  ★ {selectedTraveler.rating}
-                </span>
-                <span className="text-muted-foreground">
-                  ({selectedTraveler.reviews} ulasan)
-                </span>
-              </div>
-            </div>
+                        {/* Description */}
+                        <div>
+                          <FieldLabel icon={FileText}>Deskripsi Barang</FieldLabel>
+                          <Textarea
+                            placeholder="Warna, ukuran, kondisi, dan detail lainnya..."
+                            rows={3}
+                            value={formData.itemDescription}
+                            onChange={(e) => set("itemDescription", e.target.value)}
+                            className="rounded-xl border-zinc-200 resize-none"
+                            required
+                          />
+                        </div>
 
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">
-                Harga / kg
-              </p>
-              <p className="font-bold text-primary">
-                Rp {selectedTraveler.pricePerKg.toLocaleString()}
-              </p>
-            </div>
-          </div>
+                        {/* Estimated price (titip-beli only) */}
+                        {formData.orderType === "titip-beli" && (
+                          <div>
+                            <FieldLabel icon={TrendingUp}>Estimasi Harga Barang</FieldLabel>
+                            <div className="relative">
+                              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400">Rp</span>
+                              <Input
+                                type="number"
+                                placeholder="350000"
+                                value={formData.estimatedItemPrice}
+                                onChange={(e) => set("estimatedItemPrice", e.target.value)}
+                                className="h-11 rounded-xl border-zinc-200 pl-10"
+                              />
+                            </div>
+                            <InfoNote>Perkiraan harga barang yang dititipkan</InfoNote>
+                          </div>
+                        )}
+
+                        {/* Weight */}
+                        <div>
+                          <FieldLabel icon={Scale}>Estimasi Berat (kg)</FieldLabel>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0.1"
+                              step="0.1"
+                              placeholder="1.5"
+                              value={formData.weight}
+                              onChange={(e) => set("weight", e.target.value)}
+                              className="h-11 rounded-xl border-zinc-200 pr-10"
+                              required
+                            />
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400">kg</span>
+                          </div>
+                        </div>
+                      </div>
+                    </SectionCard>
+                    <StepButton />
+                  </>
+                )}
+
+                {/* ═══════════════════════════════════════════════ STEP 2 */}
+                {step === 2 && (
+                  <>
+                    <div className="mb-2">
+                      <h2 className="text-base font-semibold text-zinc-900">Pilih Mitra Traveler</h2>
+                      <p className="text-sm text-zinc-500 mt-0.5">Tersedia sesuai rute dan tanggal yang dipilih</p>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {[
+                        {
+                          label: "Rating", key: "minRating",
+                          options: [{ label: "4.0+", value: "4" }, { label: "4.5+", value: "4.5" }, { label: "4.8+", value: "4.8" }],
+                        },
+                        {
+                          label: "Harga", key: "maxPrice",
+                          options: [{ label: "≤20K", value: "20000" }, { label: "≤30K", value: "30000" }, { label: "≤40K", value: "40000" }],
+                        },
+                        {
+                          label: "Kapasitas", key: "minCapacity",
+                          options: [{ label: "≥3kg", value: "3" }, { label: "≥5kg", value: "5" }, { label: "≥7kg", value: "7" }],
+                        },
+                      ].map(({ label, key, options }) => (
+                        <Select
+                          key={key}
+                          value={filters[key as keyof typeof filters]}
+                          onValueChange={(v) => setFilters({ ...filters, [key]: v })}
+                        >
+                          <SelectTrigger className="h-8 w-auto gap-1 rounded-full border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-600 shadow-sm">
+                            <SelectValue placeholder={label} />
+                            <ChevronDown className="h-3 w-3" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      ))}
+
+                      {(filters.minRating || filters.maxPrice || filters.minCapacity) && (
+                        <button
+                          type="button"
+                          onClick={() => setFilters({ minRating: "", minCapacity: "", maxPrice: "" })}
+                          className="h-8 rounded-full border border-red-200 bg-red-50 px-4 text-xs font-semibold text-red-500 hover:bg-red-100 transition"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      {filteredTravelers.map((t, i) => (
+                        <motion.label
+                          key={t.id}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.06 }}
+                          className={`relative block cursor-pointer rounded-2xl border-2 bg-white p-5 transition-all duration-200 ${
+                            formData.travelerId === t.id
+                              ? "border-green-500 shadow-[0_0_0_4px_rgba(22,163,74,0.08)]"
+                              : "border-zinc-100 hover:border-green-300 shadow-sm"
+                          }`}
+                        >
+                          <input type="radio" name="traveler" value={t.id} checked={formData.travelerId === t.id}
+                            onChange={(e) => set("travelerId", e.target.value)} className="hidden" required />
+
+                          {/* Header */}
+                          <div className="flex items-start gap-4 mb-4">
+                            <img src={t.avatar} alt={t.name} className="h-14 w-14 rounded-2xl border border-zinc-100 object-cover shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <p className="font-bold text-zinc-900 text-base leading-tight">{t.name}</p>
+                                {t.badge && (
+                                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold shrink-0 ${
+                                    t.badge === "Termurah" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                                  }`}>
+                                    {t.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-zinc-500">{t.route}</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                                <span className="text-sm font-semibold text-zinc-800">{t.rating}</span>
+                                <span className="text-xs text-zinc-400">({t.reviews} ulasan)</span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs text-zinc-400">per kg</p>
+                              <p className="text-xl font-bold text-green-600">
+                                {(t.pricePerKg / 1000).toFixed(0)}
+                                <span className="text-sm font-semibold text-green-400">K</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Timeline */}
+                          <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-4 py-3 mb-3">
+                            <div>
+                              <p className="text-xs text-zinc-400">Berangkat</p>
+                              <p className="text-sm font-bold text-zinc-800">{t.departureTime}</p>
+                            </div>
+                            <div className="flex-1 flex items-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                              <div className="flex-1 h-[2px] bg-gradient-to-r from-green-400 to-emerald-400 rounded-full" />
+                              <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-zinc-400">Sampai</p>
+                              <p className="text-sm font-bold text-zinc-800">{t.estimatedArrival}</p>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="flex items-center justify-between text-xs text-zinc-400">
+                            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{t.distance}</span>
+                            <span>Sisa kapasitas: <span className="font-semibold text-zinc-700">{t.capacityLeft}</span></span>
+                          </div>
+
+                          {formData.travelerId === t.id && (
+                            <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-green-600">
+                              <CheckCircle className="h-3.5 w-3.5" />Terpilih
+                            </div>
+                          )}
+                        </motion.label>
+                      ))}
+                    </div>
+                    <StepButton />
+                  </>
+                )}
+
+                {/* ═══════════════════════════════════════════════ STEP 3 */}
+                {step === 3 && (
+                  <>
+                    <SectionCard title={formData.orderType === "titip-beli" ? "Titik COD" : "COD 1 – Ambil Barang"}>
+                      <div className="space-y-3">
+                        {pickupPoints.map((p) => (
+                          <PickupOption
+                            key={p.id}
+                            point={p}
+                            name="pickupPoint"
+                            checked={formData.pickupPoint === p.id}
+                            onChange={() => set("pickupPoint", p.id)}
+                            color="green"
+                          />
+                        ))}
+                      </div>
+                    </SectionCard>
+
+                    {formData.orderType === "kirim" && (
+                      <SectionCard title="COD 2 – Antar ke Penerima">
+                        <div className="space-y-3">
+                          {pickupPoints.map((p) => (
+                            <PickupOption
+                              key={p.id}
+                              point={p}
+                              name="dropPoint"
+                              checked={formData.dropPoint === p.id}
+                              onChange={() => set("dropPoint", p.id)}
+                              color="emerald"
+                            />
+                          ))}
+                        </div>
+                      </SectionCard>
+                    )}
+                    <StepButton />
+                  </>
+                )}
+
+                {/* ═══════════════════════════════════════════════ STEP 4 */}
+                {step === 4 && (
+                  <>
+                    {/* Order detail */}
+                    <SectionCard title="Detail Pesanan">
+                      <div className="flex gap-4">
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <p className="text-xs text-zinc-400">Jenis Layanan</p>
+                            <p className="text-sm font-semibold text-zinc-900">
+                              {formData.orderType === "titip-beli" ? "Titip Beli Barang" : "Kirim / Titip Barang"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-400">Nama Barang</p>
+                            <p className="text-sm font-semibold text-zinc-900">{formData.itemName || "-"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-zinc-400">Berat</p>
+                            <p className="text-sm font-semibold text-zinc-900">{formData.weight || "-"} kg</p>
+                          </div>
+                          {formData.orderType === "titip-beli" && formData.estimatedItemPrice && (
+                            <div>
+                              <p className="text-xs text-zinc-400">Estimasi Harga Barang</p>
+                              <p className="text-sm font-semibold text-zinc-900">
+                                Rp {Number(formData.estimatedItemPrice).toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+                          {formData.orderType === "titip-beli" ? (
+                            <div>
+                              <p className="text-xs text-zinc-400">Lokasi COD</p>
+                              <p className="text-sm font-semibold text-zinc-900">{pickupLabel(formData.pickupPoint)}</p>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <p className="text-xs text-zinc-400">Lokasi Jemput</p>
+                                <p className="text-sm font-semibold text-zinc-900">{pickupLabel(formData.pickupPoint)}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-zinc-400">Lokasi Tujuan</p>
+                                <p className="text-sm font-semibold text-zinc-900">{pickupLabel(formData.dropPoint)}</p>
+                              </div>
+                            </>
+                          )}
+                          {formData.itemDescription && (
+                            <div>
+                              <p className="text-xs text-zinc-400">Deskripsi</p>
+                              <p className="text-sm text-zinc-600 leading-relaxed">{formData.itemDescription}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Photo preview */}
+                        <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden border border-zinc-100 bg-zinc-50 flex items-center justify-center">
+                          {formData.photo ? (
+                            <img src={URL.createObjectURL(formData.photo)} alt="Foto" className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="h-6 w-6 text-zinc-300" />
+                          )}
+                        </div>
+                      </div>
+                    </SectionCard>
+
+                    {/* Traveler */}
+                    {selectedTraveler && (
+                      <SectionCard title="Mitra Traveler">
+                        <div className="flex items-center gap-4">
+                          <img src={selectedTraveler.avatar} alt={selectedTraveler.name}
+                            className="h-14 w-14 rounded-2xl border border-zinc-100 object-cover" />
+                          <div className="flex-1">
+                            <p className="font-bold text-zinc-900">{selectedTraveler.name}</p>
+                            <p className="text-xs text-zinc-500">{selectedTraveler.route}</p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                              <span className="text-sm font-semibold text-zinc-800">{selectedTraveler.rating}</span>
+                              <span className="text-xs text-zinc-400">({selectedTraveler.reviews})</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-zinc-400">Harga / kg</p>
+                            <p className="text-lg font-bold text-green-600">
+                              Rp {selectedTraveler.pricePerKg.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </SectionCard>
+                    )}
+
+                    {/* Express toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setIsExpress(!isExpress)}
+                      className={`w-full rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+                        isExpress ? "border-green-500 bg-green-50" : "border-zinc-100 bg-white hover:border-green-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                            isExpress ? "bg-green-500 text-white" : "bg-zinc-100 text-zinc-500"
+                          }`}>
+                            <Zap className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-zinc-900 text-sm">Express Delivery</p>
+                            <p className="text-xs text-zinc-500">Prioritas diproses lebih cepat</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-green-600">+Rp 5.000</span>
+                          <div className={`h-6 w-11 rounded-full transition-all duration-200 ${
+                            isExpress ? "bg-green-500" : "bg-zinc-200"
+                          } relative`}>
+                            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200 ${
+                              isExpress ? "left-5" : "left-0.5"
+                            }`} />
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Total payment */}
+                    {selectedTraveler && (
+                      <div className="rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 p-6 text-white shadow-lg shadow-green-200">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-green-100">Total Pembayaran</p>
+                            <p className="text-xs text-green-200">
+                              Ongkir: {formData.weight} kg × Rp {selectedTraveler.pricePerKg.toLocaleString()}
+                            </p>
+                            {formData.orderType === "titip-beli" && (
+                              <p className="text-xs text-green-200">
+                                Harga barang: Rp {itemPriceNum.toLocaleString()}
+                              </p>
+                            )}
+                            {isExpress && <p className="text-xs text-green-200">Express: +Rp 5.000</p>}
+                          </div>
+                          <p className="text-3xl font-bold">
+                            Rp {totalPayment.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit */}
+                    <button
+                      type="submit"
+                      className="w-full h-14 rounded-2xl bg-green-600 hover:bg-green-700 active:scale-[0.98] text-white font-bold text-base shadow-lg shadow-green-200 transition-all duration-150 flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                      Konfirmasi & Kirim Order
+                    </button>
+                  </>
+                )}
+              </form>
+            </motion.div>
+          </AnimatePresence>
         </div>
-      )}
-
-{/* ===================== */}
-{/* TOTAL PEMBAYARAN */}
-{/* ===================== */}
-{selectedTraveler && (
-  <div className="rounded-2xl border border-primary/30 bg-primary/10 p-6">
-    <div className="flex items-center justify-between gap-4">
-
-   <div className="space-y-1">
-
-  <p className="text-sm text-muted-foreground">
-    Total Pembayaran
-  </p>
-
-  <p className="text-xs text-muted-foreground">
-    Ongkir: {formData.weight} kg × Rp {selectedTraveler.pricePerKg.toLocaleString()}
-  </p>
-
-  {formData.orderType === "titip-beli" && (
-    <p className="text-xs text-muted-foreground">
-      Estimasi barang: Rp {Number(formData.estimatedItemPrice || 0).toLocaleString()}
-    </p>
-  )}
-
-</div>
-
-      {/* KANAN – ANGKA BESAR */}
-      <p className="text-3xl font-bold text-primary text-right whitespace-nowrap">
-      Rp {totalPayment.toLocaleString()}
-      </p>
-
-    </div>
-  </div>
-)}
-
-      {/* ===================== */}
-      {/* AKSI */}
-      {/* ===================== */}
- <div className="pt-6">
-  <Button
-    type="submit"
-    className="
-      w-full
-      h-14
-      text-base
-      font-semibold
-      gap-2
-      rounded-xl
-      bg-primary
-      hover:bg-primary/90
-      active:scale-[0.98]
-      transition
-      shadow-md
-    "
-  >
-    Konfirmasi & Kirim Order
-  </Button>
-</div>
-      </div>
-
-  </>
-)}
-                </form>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="rounded-2xl bg-card p-8 shadow-card text-center"
-              >
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-success/20 mx-auto mb-6">
-                  <CheckCircle className="h-10 w-10 text-success" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Order Berhasil Dibuat!
-                </h2>
-                <p className="text-muted-foreground mb-2">
-                  Order Anda telah dikirim ke traveler. Anda akan mendapat notifikasi setelah traveler mengonfirmasi.
-                </p>
-                <p className="text-sm text-muted-foreground mb-6">
-                 No. Order: <span className="font-semibold text-foreground">{orderNumber}</span>
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button variant="hero" asChild>
-                    <Link to="/dashboard">
-                      <Package className="h-5 w-5 mr-2" />
-                      Ke Dashboard
-                    </Link>
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// ─── Reusable small components ─────────────────────────────────────────────────
+
+function StepButton() {
+  return (
+    <button
+      type="submit"
+      className="w-full h-12 rounded-xl bg-green-600 hover:bg-green-700 active:scale-[0.98] text-white font-semibold text-sm shadow-md shadow-green-100 transition-all duration-150 flex items-center justify-center gap-2 mt-2"
+    >
+      Lanjut
+      <ArrowRight className="h-4 w-4" />
+    </button>
+  );
+}
+
+function PickupOption({
+  point, name, checked, onChange, color,
+}: {
+  point: { id: string; name: string; address: string; distance: string };
+  name: string; checked: boolean; onChange: () => void; color: "green" | "emerald";
+}) {
+  const active = color === "green"
+    ? "border-green-500 bg-green-50"
+    : "border-emerald-500 bg-emerald-50";
+  const dot = color === "green" ? "bg-green-500" : "bg-emerald-500";
+  const borderColor = color === "green" ? "border-green-500" : "border-emerald-500";
+  return (
+    <label
+      className={`flex items-center gap-4 rounded-xl border-2 p-4 cursor-pointer transition-all duration-150 ${
+        checked ? active : "border-zinc-100 hover:border-zinc-300 bg-white"
+      }`}
+    >
+      <input type="radio" name={name} value={point.id} checked={checked} onChange={onChange} className="hidden" required />
+      <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 shrink-0 ${
+        checked ? borderColor : "border-zinc-300"
+      }`}>
+        {checked && <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-zinc-900">{point.name}</p>
+        <p className="text-xs text-zinc-500 mt-0.5">{point.address}</p>
+      </div>
+      <span className="text-xs font-medium text-zinc-400 shrink-0">{point.distance}</span>
+    </label>
   );
 }

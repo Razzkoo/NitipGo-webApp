@@ -140,31 +140,80 @@ export default function AdminRoutes() {
         </motion.div>
 
         {/* Stats */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid gap-4 md:grid-cols-3 mb-6"
-        >
-          <div className="rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-shadow">
-            <p className="text-sm text-muted-foreground">Total Rute</p>
-            <p className="text-2xl font-bold text-foreground">
-              <CountUp end={routes.length} duration={1000} />
-            </p>
-          </div>
-          <div className="rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-shadow">
-            <p className="text-sm text-muted-foreground">Rute Aktif</p>
-            <p className="text-2xl font-bold text-success">
-              <CountUp end={routes.filter(r => r.active).length} duration={1000} />
-            </p>
-          </div>
-          <div className="rounded-xl bg-card p-4 shadow-card hover:shadow-card-hover transition-shadow">
-            <p className="text-sm text-muted-foreground">Total Traveler</p>
-            <p className="text-2xl font-bold text-primary">
-              <CountUp end={routes.reduce((sum, r) => sum + r.travelers, 0)} duration={1500} />
-            </p>
-          </div>
-        </motion.div>
+<motion.div
+  initial={{ opacity: 0, y: 16 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+  className="grid gap-3 md:grid-cols-3 mb-6"
+>
+  {[
+    {
+      label: "Total Rute",
+      value: routes.length,
+      duration: 1000,
+      icon: <Route className="h-4 w-4" />,
+      suffix: "rute",
+      delay: 0,
+    },
+    {
+      label: "Rute Aktif",
+      value: routes.filter(r => r.active).length,
+      duration: 1000,
+      icon: (
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-50" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+        </span>
+      ),
+      suffix: "aktif",
+      delay: 0.06,
+    },
+    {
+      label: "Total Traveler",
+      value: routes.reduce((sum, r) => sum + r.travelers, 0),
+      duration: 1500,
+      icon: <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+      suffix: "orang",
+      delay: 0.12,
+    },
+  ].map((stat, i) => (
+    <motion.div
+      key={i}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: stat.delay + 0.15, duration: 0.45, ease: "easeOut" }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className="group relative rounded-2xl bg-card border border-border/60 p-5 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 overflow-hidden"
+    >
+      {/* subtle top-left accent line */}
+      <div className="absolute top-0 left-5 right-5 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+          {stat.label}
+        </span>
+        <span className="text-muted-foreground/50 group-hover:text-primary/60 transition-colors duration-300">
+          {stat.icon}
+        </span>
+      </div>
+
+      <div className="flex items-end gap-2">
+        <p className="text-3xl font-semibold tracking-tight text-foreground leading-none">
+          <CountUp end={stat.value} duration={stat.duration} />
+        </p>
+        <span className="text-xs text-muted-foreground mb-0.5 leading-none">{stat.suffix}</span>
+      </div>
+
+      {/* bottom fill bar - animates in on mount */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: stat.delay + 0.5, duration: 0.7, ease: "easeOut" }}
+        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 origin-left"
+      />
+    </motion.div>
+  ))}
+</motion.div>
 
         {/* Route List */}
         <motion.div

@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Wallet,
+  Rocket,
   Crown,
   Users,
   Settings,
@@ -47,8 +48,6 @@ const customerNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Order", href: "/orders", icon: Package },
   { name: "History", href: "/history", icon: Clock },
-  { name: "Profil", href: "/profile", icon: User },
-  { name: "Pengaturan", href: "/settings", icon: Settings },
 ];
 
 const travelerNavItems: NavItem[] = [
@@ -56,8 +55,6 @@ const travelerNavItems: NavItem[] = [
   { name: "Perjalanan", href: "/traveler/trip", icon: PlaneIcon },
   { name: "Order", href: "/traveler/orders", icon: Package },
   { name: "Saldo", href: "/traveler/wallet", icon: Wallet },
-  { name: "Profil", href: "/traveler/profile", icon: User },
-  { name: "Pengaturan", href: "/traveler/settings", icon: Settings },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -67,9 +64,8 @@ const adminNavItems: NavItem[] = [
   { name: "Kota & Rute", href: "/admin/routes", icon: Route },
   { name: "Dispute", href: "/admin/disputes", icon: AlertTriangle },
   { name: "Saldo", href: "/admin/wallet", icon: Wallet },
-  { name: "Pengaturan", href: "/admin/settings", icon: Settings },
-  { name: "Profil", href: "/admin/profile", icon: User },
   { name: "Rating", href: "/admin/rating", icon: Crown },
+  { name: "Booster", href: "/admin/boosters", icon: Rocket },
 ];
 
 const roleConfig = {
