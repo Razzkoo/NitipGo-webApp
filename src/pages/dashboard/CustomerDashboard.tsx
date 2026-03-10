@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { CountUp } from "@/components/ui/CountUp";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -66,7 +66,7 @@ export default function CustomerDashboard() {
   const [showOrderModal, setShowOrderModal] = useState(false);
 
   return (
-    <DashboardLayout role="customer">
+    <CustomerLayout>
       <div className="p-6 md:p-8 lg:p-10">
 
         {/* Header */}
@@ -233,6 +233,6 @@ export default function CustomerDashboard() {
         </motion.div>
 
       </div>
-    </DashboardLayout>
+    </CustomerLayout>
   );
 }

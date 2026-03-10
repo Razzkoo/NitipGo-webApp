@@ -8,7 +8,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Textarea } from "@/components/ui/textarea";
@@ -123,7 +123,7 @@ const filteredOrders =
     : historyOrders.filter(o => o.status === activeTab);
 
   return (
-    <DashboardLayout role="customer">
+    <CustomerLayout>
       <div className="p-6 md:p-8 lg:p-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -355,6 +355,6 @@ const filteredOrders =
           </Button>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </CustomerLayout>
   );
 }

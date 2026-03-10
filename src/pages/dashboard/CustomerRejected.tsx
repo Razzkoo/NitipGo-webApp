@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { XCircle, ArrowLeft, RefreshCcw, AlertTriangle } from "lucide-react";
 
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -25,7 +25,7 @@ export default function CustomerRejectedOrderDetail() {
 
   if (!order) {
     return (
-      <DashboardLayout role="customer">
+      <CustomerLayout>
         <div className="p-6 md:p-8 max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <p className="text-center text-muted-foreground">
@@ -36,12 +36,12 @@ export default function CustomerRejectedOrderDetail() {
             </div>
           </motion.div>
         </div>
-      </DashboardLayout>
+      </CustomerLayout>
     );
   }
 
   return (
-    <DashboardLayout role="customer">
+    <CustomerLayout>
       <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-6">
 
         {/* HEADER */}
@@ -165,6 +165,6 @@ export default function CustomerRejectedOrderDetail() {
         </Dialog>
 
       </div>
-    </DashboardLayout>
+    </CustomerLayout>
   );
 }

@@ -4,7 +4,7 @@ import { User, Mail, Phone, MapPin, Camera, Save, ShoppingBag, Star, Clock, Tras
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { useToast } from "@/hooks/use-toast";
 import { CountUp } from "@/components/ui/CountUp";
 import {
@@ -63,7 +63,7 @@ export default function CustomerProfile() {
 };
 
   return (
-    <DashboardLayout role="customer">
+    <CustomerLayout>
       <div className="p-6 md:p-8 lg:p-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -263,6 +263,6 @@ export default function CustomerProfile() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </CustomerLayout>
   );
 }

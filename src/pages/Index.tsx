@@ -104,7 +104,7 @@ const itemVariants: Variants = {
 
 export default function Index() {
   return (
-    <MainLayout>
+    <MainLayout isLoggedIn={true}> {/* test tampilan guest/customer */}
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero">
         {/* Background decoration */}

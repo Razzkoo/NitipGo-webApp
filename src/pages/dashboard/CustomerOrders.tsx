@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Package, MapPin, User, Phone } from "lucide-react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -32,7 +32,7 @@ type OrderStatus =
 
 
   return (
-    <DashboardLayout role="customer">
+    <CustomerLayout>
       <div className="p-6 md:p-8 lg:p-10">
         {/* HEADER */}
         <motion.div
@@ -234,6 +234,6 @@ type OrderStatus =
           />
         )}
       </div>
-    </DashboardLayout>
+    </CustomerLayout>
   );
 }
