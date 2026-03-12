@@ -19,7 +19,10 @@ import {
   AlertTriangle,
   Route,
   ChevronDown,
-  Bell
+  Bell,
+  UserCheck,
+  UserCog,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type UserRole = "customer" | "traveler" | "admin";
+type UserRole = "traveler" | "admin";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -42,13 +45,8 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
+  children?: { name: string; href: string; icon: React.ElementType }[];
 }
-
-const customerNavItems: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Order", href: "/orders", icon: Package },
-  { name: "History", href: "/history", icon: Clock },
-];
 
 const travelerNavItems: NavItem[] = [
   { name: "Dashboard", href: "/traveler", icon: LayoutDashboard },
@@ -59,21 +57,32 @@ const travelerNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Users", href: "/admin/users", icon: Users },
+  {
+    name: "Users",
+    href: "/admin/users",
+    icon: Users,
+    children: [
+      { name: "Customer", href: "/admin/users", icon: UserCheck },
+      { name: "Traveler", href: "/admin/usertraveler", icon: UserCog },
+    ],
+  },
   { name: "Transaksi", href: "/admin/transactions", icon: Banknote },
   { name: "Kota & Rute", href: "/admin/routes", icon: Route },
   { name: "Dispute", href: "/admin/disputes", icon: AlertTriangle },
   { name: "Saldo", href: "/admin/wallet", icon: Wallet },
   { name: "Rating", href: "/admin/rating", icon: Crown },
-  { name: "Booster", href: "/admin/boosters", icon: Rocket },
+  {
+    name: "Langganan",
+    href: "/admin/langganan",
+    icon: Rocket,
+    children: [
+      { name: "Booster", href: "/admin/boosters", icon: Rocket },
+      { name: "Iklan", href: "/admin/iklan", icon: Megaphone },
+    ],
+  },
 ];
 
 const roleConfig = {
-  customer: {
-    label: "Customer",
-    color: "bg-primary/20 text-primary",
-    items: customerNavItems,
-  },
   traveler: {
     label: "Traveler",
     color: "bg-accent/20 text-accent",
@@ -93,16 +102,147 @@ const mockUser = {
   avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
 };
 
+// Komponen untuk nav item biasa
+function SidebarNavItem({
+  item,
+  isActive,
+  index,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  index: number;
+  onClick: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <Link
+        to={item.href}
+        onClick={onClick}
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-primary text-primary-foreground shadow-md"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span>{item.name}</span>
+      </Link>
+    </motion.div>
+  );
+}
+
+// Komponen untuk nav item dengan dropdown
+function SidebarDropdownItem({
+  item,
+  isAnyChildActive,
+  isOpen,
+  onToggle,
+  onLinkClick,
+  index,
+  isChildActive,
+}: {
+  item: NavItem;
+  isAnyChildActive: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  onLinkClick: () => void;
+  index: number;
+  isChildActive: (href: string) => boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      {/* Parent Button */}
+      <button
+        onClick={onToggle}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+          isAnyChildActive
+            ? "bg-primary/10 text-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <item.icon className="h-5 w-5 shrink-0" />
+        <span className="flex-1 text-left">{item.name}</span>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.div>
+      </button>
+
+      {/* Children */}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="ml-4 mt-1 space-y-1 border-l-2 border-border pl-3">
+              {item.children!.map((child) => {
+                const childActive = isChildActive(child.href);
+                return (
+                  <Link
+                    key={child.href}
+                    to={child.href}
+                    onClick={onLinkClick}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                      childActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <child.icon className="h-4 w-4 shrink-0" />
+                    <span>{child.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 export function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const config = roleConfig[role];
 
   const isActiveLink = (href: string) => {
-    if (href === "/dashboard" || href === "/traveler" || href === "/admin") {
+    if (href === "/traveler" || href === "/admin") {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);
+  };
+
+  const isAnyChildActive = (item: NavItem) => {
+    return item.children?.some((child) => isActiveLink(child.href)) ?? false;
+  };
+
+  const toggleDropdown = (href: string) => {
+    setOpenDropdowns((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
+
+  // Auto-buka dropdown kalau salah satu child-nya aktif
+  const isDropdownOpen = (item: NavItem) => {
+    return openDropdowns[item.href] ?? isAnyChildActive(item);
   };
 
   return (
@@ -123,12 +263,12 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Sidebar Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+        <div className="flex h-16 items-center justify-between px-4 border-b border-border shrink-0">
           <Link to="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
               <Package className="h-5 w-5 text-primary-foreground" />
@@ -146,42 +286,39 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {config.items.map((item, i) => {
-            const isActive = isActiveLink(item.href);
+            // Item dengan dropdown
+            if (item.children && item.children.length > 0) {
+              return (
+                <SidebarDropdownItem
+                  key={item.href}
+                  item={item}
+                  index={i}
+                  isAnyChildActive={isAnyChildActive(item)}
+                  isOpen={isDropdownOpen(item)}
+                  onToggle={() => toggleDropdown(item.href)}
+                  onLinkClick={() => setSidebarOpen(false)}
+                  isChildActive={isActiveLink}
+                />
+              );
+            }
+
+            // Item biasa
             return (
-              <motion.div
+              <SidebarNavItem
                 key={item.href}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute right-2 h-2 w-2 rounded-full bg-primary-foreground"
-                    />
-                  )}
-                </Link>
-              </motion.div>
+                item={item}
+                index={i}
+                isActive={isActiveLink(item.href)}
+                onClick={() => setSidebarOpen(false)}
+              />
             );
           })}
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border shrink-0">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
@@ -208,7 +345,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
               <Menu className="h-5 w-5" />
             </button>
 
-            {/* Page Title - Hidden on mobile */}
             <div className="hidden lg:block" />
 
             {/* Right Side */}
@@ -216,7 +352,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
               {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to={
-                  role === "customer" ? "/notifications" :
                   role === "traveler" ? "/traveler/notifications" :
                   "/admin/notifications"
                 }>
@@ -251,7 +386,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to={
-                      role === "customer" ? "/profile" :
                       role === "traveler" ? "/traveler/profile" :
                       "/admin/profile"
                     } className="cursor-pointer">
@@ -261,7 +395,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to={
-                      role === "customer" ? "/settings" :
                       role === "traveler" ? "/traveler/settings" :
                       "/admin/settings"
                     } className="cursor-pointer">
@@ -282,7 +415,7 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page Content with Animation */}
+        {/* Page Content */}
         <motion.main
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -292,6 +425,6 @@ export function DashboardLayout({ children, role }: DashboardLayoutProps) {
           {children}
         </motion.main>
       </div>
-    </div>
+      </div>
   );
 }

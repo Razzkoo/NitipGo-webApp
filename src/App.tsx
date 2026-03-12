@@ -54,6 +54,7 @@ import PaymentBoost from "./pages/traveler/PaymentBoost";
 
 // Admin Pages
 import AdminUsers from "./pages/admin/Users";
+import AdminUserTraveler from "./pages/admin/UserTraveler";
 import AdminTransactions from "./pages/admin/Transactions";
 import AdminRoutes from "./pages/admin/Routes";
 import AdminDisputes from "./pages/admin/Disputes";
@@ -61,6 +62,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminWallet from "./pages/admin/AdminWallet";
 import AdminRating from "./pages/admin/Rating"
 import AdminBoosters from "./pages/admin/Boosters";
+import AdminIklan from "./pages/admin/Iklan";
 
 // Profile Pages
 import CustomerProfile from "./pages/profile/CustomerProfile";
@@ -152,7 +154,7 @@ const App = () => (
           {/* Admin Dashboard */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/verifications" element={<AdminUsers />} />
+          <Route path="/admin/usertraveler" element={<AdminUserTraveler />} />
           <Route path="/admin/transactions" element={<AdminTransactions />} />
           <Route path="/admin/routes" element={<AdminRoutes />} />
           <Route path="/admin/disputes" element={<AdminDisputes />} />
@@ -162,6 +164,7 @@ const App = () => (
           <Route path="/admin/wallet" element={<AdminWallet />} />
           <Route path="/admin/rating" element={<AdminRating />} />
           <Route path="/admin/boosters" element={<AdminBoosters />} />
+          <Route path="/admin/iklan" element={<AdminIklan />} />
           
           {/* Live Chat */}
           <Route path="/live-chat" element={<LiveChat />} />

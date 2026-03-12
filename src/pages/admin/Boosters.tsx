@@ -40,6 +40,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from "lucide-react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────────
 
@@ -224,167 +225,6 @@ const travelerBoosters = [
     joinDate: "2024-06-10",
   },
 ];
-
-
-
-// ─── Admin Nav ──────────────────────────────────────────────────────────────────
-
-const adminNavItems = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Transaksi", href: "/admin/transactions", icon: Banknote },
-  { name: "Kota & Rute", href: "/admin/routes", icon: Route },
-  { name: "Dispute", href: "/admin/disputes", icon: AlertTriangle },
-  { name: "Saldo", href: "/admin/wallet", icon: Wallet },
-  { name: "Rating", href: "/admin/rating", icon: Crown },
-  { name: "Booster", href: "/admin/boosters", icon: Rocket },
-];
-
-const mockUser = {
-  name: "Admin NitipGo",
-  email: "admin@nitipgo.id",
-  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
-};
-
-// ─── DashboardLayout ─────────────────────────────────────────────────────────────
-
-function DashboardLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-
-  const isActive = (href) => {
-    if (href === "/admin") return location.pathname === href;
-    return location.pathname.startsWith(href);
-  };
-
-  return (
-    <div className="flex min-h-screen bg-background">
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <aside
-        className={[
-          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border",
-          "flex flex-col transition-transform duration-300",
-          "lg:translate-x-0 lg:static lg:z-auto",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        ].join(" ")}
-      >
-        <div className="flex h-16 items-center justify-between px-4 border-b border-border flex-shrink-0">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
-              <Package className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground">
-              Nitip<span className="text-primary">Go</span>
-            </span>
-          </Link>
-          <button
-            className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {adminNavItems.map((item, i) => {
-            const active = isActive(item.href);
-            return (
-              <motion.div
-                key={item.href}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={[
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-md"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  ].join(" ")}
-                >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  <span>{item.name}</span>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-border flex-shrink-0">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-muted transition-all duration-200"
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Keluar</span>
-          </Link>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 h-16 bg-card/80 backdrop-blur-lg border-b border-border flex-shrink-0">
-          <div className="flex h-full items-center justify-between px-4 lg:px-6">
-            <button
-              className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div className="hidden lg:block" />
-            <div className="flex items-center gap-3">
-              <Link
-                to="/admin/notifications"
-                className="relative p-2 rounded-xl hover:bg-muted transition-colors"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-              </Link>
-              <div className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-muted transition-colors cursor-pointer">
-                <img
-                  src={mockUser.avatar}
-                  alt={mockUser.name}
-                  className="h-8 w-8 rounded-full bg-muted"
-                />
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-foreground leading-none mb-0.5">
-                    {mockUser.name}
-                  </p>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-destructive/20 text-destructive">
-                    Admin
-                  </span>
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <motion.main
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex-1 overflow-auto"
-        >
-          {children}
-        </motion.main>
-      </div>
-    </div>
-  );
-}
 
 // ─── StatusBadge ────────────────────────────────────────────────────────────────
 
@@ -825,7 +665,7 @@ function DetailModal({ traveler, onClose, onSuspend, onActivate }) {
 
 // ─── BoosterMonitoringPage ────────────────────────────────────────────────────────
 
-function BoosterMonitoringPage() {
+export default function AdminRoutes() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
@@ -902,6 +742,7 @@ function BoosterMonitoringPage() {
   ];
 
   return (
+      <DashboardLayout role="admin">
     <div className="p-4 lg:p-6 space-y-6">
       {/* Page Header */}
       <motion.div
@@ -1304,15 +1145,7 @@ function BoosterMonitoringPage() {
         />
       )}
     </div>
-  );
-}
-
-// ─── Export ──────────────────────────────────────────────────────────────────────
-
-export default function BoosterMonitoring() {
-  return (
-    <DashboardLayout>
-      <BoosterMonitoringPage />
     </DashboardLayout>
   );
 }
+
